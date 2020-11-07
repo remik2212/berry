@@ -723,33 +723,6 @@ export class Project {
       if (currentResolutionPass.size === 0)
         throw new Error(`Assertion failed: Descriptors should not have cyclic dependencies`);
 
-      // Then we request the resolvers for the list of possible references that
-      // match the given ranges. That will give us a set of candidate references
-      // for each descriptor.
-
-      const passCandidates = new Map(await Promise.all(Array.from(currentResolutionPass).map(async descriptorHash => {
-        const descriptor = allDescriptors.get(descriptorHash);
-        if (typeof descriptor === `undefined`)
-          throw new Error(`Assertion failed: The descriptor should have been registered`);
-
-        const descriptorDependencies = resolvedDependencies.get(descriptor.descriptorHash);
-        if (typeof descriptorDependencies === `undefined`)
-          throw new Error(`Assertion failed: The descriptor dependencies should have been registered`);
-
-        let candidateLocators;
-        try {
-          candidateLocators = await resolver.getCandidates(descriptor, descriptorDependencies, resolveOptions);
-        } catch (error) {
-          error.message = `${structUtils.prettyDescriptor(this.configuration, descriptor)}: ${error.message}`;
-          throw error;
-        }
-
-        if (candidateLocators.length === 0)
-          throw new Error(`No candidate found for ${structUtils.prettyDescriptor(this.configuration, descriptor)}`);
-
-        return [descriptor.descriptorHash, candidateLocators] as [DescriptorHash, Array<Locator>];
-      })));
-
       // That's where we'll store our resolutions until everything has been
       // resolved and can be injected into the various stores.
       //
@@ -763,62 +736,79 @@ export class Project {
 
       const passResolutions = new Map<DescriptorHash, Locator>();
 
-      // We make a pre-pass to automatically resolve the descriptors
-      // that can be satisfied by a package we're already using (deduplication).
+      const newPackages = new Map(
+        miscUtils.mapAndFilter(
+          await Promise.all(Array.from(currentResolutionPass, async descriptorHash => {
+            // Then we request the resolvers for the list of possible references that
+            // match the given range. That will give us a set of candidate references
+            // for each descriptor.
 
-      for (const [descriptorHash, candidateLocators] of passCandidates) {
-        const selectedLocator = candidateLocators.find(locator => allPackages.has(locator.locatorHash));
-        if (!selectedLocator)
-          continue;
+            const descriptor = allDescriptors.get(descriptorHash);
+            if (typeof descriptor === `undefined`)
+              throw new Error(`Assertion failed: The descriptor should have been registered`);
 
-        passResolutions.set(descriptorHash, selectedLocator);
-        passCandidates.delete(descriptorHash);
-      }
+            const descriptorDependencies = resolvedDependencies.get(descriptor.descriptorHash);
+            if (typeof descriptorDependencies === `undefined`)
+              throw new Error(`Assertion failed: The descriptor dependencies should have been registered`);
 
-      // We now automatically resolve all descriptors by using the best candidate.
+            let candidateLocators;
+            try {
+              candidateLocators = await resolver.getCandidates(descriptor, descriptorDependencies, resolveOptions);
+            } catch (error) {
+              error.message = `${structUtils.prettyDescriptor(this.configuration, descriptor)}: ${error.message}`;
+              throw error;
+            }
 
-      for (const [descriptorHash, candidateLocators] of passCandidates) {
-        passResolutions.set(descriptorHash, candidateLocators[0]);
-        passCandidates.delete(descriptorHash);
-      }
+            if (candidateLocators.length === 0)
+              throw new Error(`No candidate found for ${structUtils.prettyDescriptor(this.configuration, descriptor)}`);
 
-      // We now iterate over the locators we've got and, for each of them that
-      // hasn't been seen before, we fetch its dependency list and schedule
-      // them for the next cycle.
+            // We automatically resolve the descriptors that can be
+            // satisfied by a package we're already using (deduplication).
+            let locator = candidateLocators.find(locator => allPackages.has(locator.locatorHash));
+            // Otherwise we automatically resolve the descriptor by using the best candidate.
+            if (typeof locator === `undefined`)
+              locator = candidateLocators[0];
 
-      const newLocators = Array.from(passResolutions.values()).filter(locator => {
-        return !allPackages.has(locator.locatorHash);
-      });
+            passResolutions.set(descriptorHash, locator);
 
-      const newPackages = new Map(await Promise.all(newLocators.map(async locator => {
-        const original = await miscUtils.prettifyAsyncErrors(async () => {
-          return await resolver.resolve(locator, resolveOptions);
-        }, message => {
-          return `${structUtils.prettyLocator(this.configuration, locator)}: ${message}`;
-        });
+            // We skip the package if it has already been resolved.
+            if (allPackages.has(locator.locatorHash))
+              return miscUtils.mapAndFilter.skip;
 
-        if (!structUtils.areLocatorsEqual(locator, original))
-          throw new Error(`Assertion failed: The locator cannot be changed by the resolver (went from ${structUtils.prettyLocator(this.configuration, locator)} to ${structUtils.prettyLocator(this.configuration, original)})`);
+            // We then fetch its dependency list and schedule
+            // it for the next cycle.
 
-        const pkg = this.configuration.normalizePackage(original);
+            const original = await miscUtils.prettifyAsyncErrors(async () => {
+              return await resolver.resolve(locator!, resolveOptions);
+            }, message => {
+              return `${structUtils.prettyLocator(this.configuration, locator!)}: ${message}`;
+            });
 
-        for (const [identHash, descriptor] of pkg.dependencies) {
-          const dependency = await this.configuration.reduceHook(hooks => {
-            return hooks.reduceDependency;
-          }, descriptor, this, pkg, descriptor, {
-            resolver,
-            resolveOptions,
-          });
+            if (!structUtils.areLocatorsEqual(locator, original))
+              throw new Error(`Assertion failed: The locator cannot be changed by the resolver (went from ${structUtils.prettyLocator(this.configuration, locator)} to ${structUtils.prettyLocator(this.configuration, original)})`);
 
-          if (!structUtils.areIdentsEqual(descriptor, dependency))
-            throw new Error(`Assertion failed: The descriptor ident cannot be changed through aliases`);
+            const pkg = this.configuration.normalizePackage(original);
 
-          const bound = resolver.bindDescriptor(dependency, locator, resolveOptions);
-          pkg.dependencies.set(identHash, bound);
-        }
+            for (const [identHash, descriptor] of pkg.dependencies) {
+              const dependency = await this.configuration.reduceHook(hooks => {
+                return hooks.reduceDependency;
+              }, descriptor, this, pkg, descriptor, {
+                resolver,
+                resolveOptions,
+              });
 
-        return [pkg.locatorHash, {original, pkg}] as const;
-      })));
+              if (!structUtils.areIdentsEqual(descriptor, dependency))
+                throw new Error(`Assertion failed: The descriptor ident cannot be changed through aliases`);
+
+              const bound = resolver.bindDescriptor(dependency, locator, resolveOptions);
+              pkg.dependencies.set(identHash, bound);
+            }
+
+            return [pkg.locatorHash, {original, pkg}] as const;
+          })),
+          packageOrSkip => packageOrSkip
+        )
+      );
 
       // Now that the resolution is finished, we can finally insert the data
       // stored inside our pass stores into the resolution ones (we now have
