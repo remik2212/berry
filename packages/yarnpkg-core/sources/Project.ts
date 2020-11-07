@@ -3,8 +3,6 @@ import {parseSyml, stringifySyml}                                 from '@yarnpkg
 import {UsageError}                                               from 'clipanion';
 import {createHash}                                               from 'crypto';
 import {structuredPatch}                                          from 'diff';
-// @ts-expect-error
-import Logic                                                      from 'logic-solver';
 import pLimit                                                     from 'p-limit';
 import semver                                                     from 'semver';
 import {promisify}                                                from 'util';
@@ -765,18 +763,7 @@ export class Project {
 
       const passResolutions = new Map<DescriptorHash, Locator>();
 
-      // We now make a pre-pass to automatically resolve the descriptors that
-      // can only be satisfied by a single reference.
-
-      for (const [descriptorHash, candidateLocators] of passCandidates) {
-        if (candidateLocators.length !== 1)
-          continue;
-
-        passResolutions.set(descriptorHash, candidateLocators[0]);
-        passCandidates.delete(descriptorHash);
-      }
-
-      // We make a second pre-pass to automatically resolve the descriptors
+      // We make a pre-pass to automatically resolve the descriptors
       // that can be satisfied by a package we're already using (deduplication).
 
       for (const [descriptorHash, candidateLocators] of passCandidates) {
@@ -788,53 +775,11 @@ export class Project {
         passCandidates.delete(descriptorHash);
       }
 
-      // All entries that remain in "passCandidates" are from descriptors that
-      // we haven't been able to resolve in the first place. We'll now configure
-      // our SAT solver so that it can figure it out for us. To do this, we
-      // simply add a constraint for each descriptor that lists all the
-      // descriptors it would accept. We don't have to check whether the
-      // locators obtained have already been selected, because if they were the
-      // would have been resolved in the previous step (we never backtrace to
-      // try to find better solutions, it would be a too expensive process - we
-      // just want to get an acceptable solution, not the very best one).
+      // We now automatically resolve all descriptors by using the best candidate.
 
-      if (passCandidates.size > 0) {
-        const solver = new Logic.Solver();
-
-        for (const candidateLocators of passCandidates.values())
-          solver.require(Logic.or(...candidateLocators.map(locator => locator.locatorHash)));
-
-        let remainingSolutions = 100;
-        let solution;
-
-        let bestSolution = null;
-        let bestScore = Infinity;
-
-        while (remainingSolutions > 0 && (solution = solver.solve()) !== null) {
-          const trueVars = solution.getTrueVars();
-          solver.forbid(solution.getFormula());
-
-          if (trueVars.length < bestScore) {
-            bestSolution = trueVars;
-            bestScore = trueVars.length;
-          }
-
-          remainingSolutions -= 1;
-        }
-
-        if (!bestSolution)
-          throw new Error(`Assertion failed: No resolution found by the SAT solver`);
-
-        const solutionSet = new Set<LocatorHash>(bestSolution as Array<LocatorHash>);
-
-        for (const [descriptorHash, candidateLocators] of passCandidates.entries()) {
-          const selectedLocator = candidateLocators.find(locator => solutionSet.has(locator.locatorHash));
-          if (!selectedLocator)
-            throw new Error(`Assertion failed: The descriptor should have been solved during the previous step`);
-
-          passResolutions.set(descriptorHash, selectedLocator);
-          passCandidates.delete(descriptorHash);
-        }
+      for (const [descriptorHash, candidateLocators] of passCandidates) {
+        passResolutions.set(descriptorHash, candidateLocators[0]);
+        passCandidates.delete(descriptorHash);
       }
 
       // We now iterate over the locators we've got and, for each of them that
