@@ -81,6 +81,18 @@ export function getNetworkSettings(target: string, opts: { configuration: Config
     }
   }
 
+  if (process.env.NO_PROXY) {
+    const skippedHosts = process.env.NO_PROXY.split(`,`);
+
+    for (const glob of skippedHosts) {
+      if (micromatch.isMatch(url.hostname, glob)) {
+        mergedNetworkSettings.httpProxy = null;
+        mergedNetworkSettings.httpsProxy = null;
+        break;
+      }
+    }
+  }
+
   return mergedNetworkSettings as NetworkSettingsType;
 }
 
