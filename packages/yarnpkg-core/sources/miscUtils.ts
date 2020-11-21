@@ -1,8 +1,8 @@
-import {PortablePath, npath} from '@yarnpkg/fslib';
-import {UsageError}          from 'clipanion';
-import micromatch            from 'micromatch';
+import {PortablePath, npath, NativePath} from '@yarnpkg/fslib';
+import {UsageError}                      from 'clipanion';
+import micromatch                        from 'micromatch';
 
-import {Readable, Transform} from 'stream';
+import {Readable, Transform}             from 'stream';
 
 export function escapeRegExp(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, `\\$&`);
@@ -65,8 +65,9 @@ export interface ToMapValue<T extends object> {
 export type MapValueToObjectValue<T> =
   T extends Map<infer K, infer V> ? (K extends string | number | symbol ? MapValueToObjectValue<Record<K, V>> : never)
     : T extends ToMapValue<infer V> ? MapValueToObjectValue<V>
-      : T extends object ? {[K in keyof T]: MapValueToObjectValue<T[K]>}
-        : T;
+      : T extends PortablePath ? PortablePath
+        : T extends object ? {[K in keyof T]: MapValueToObjectValue<T[K]>}
+          : T;
 
 /**
  * Converts Maps to indexable objects recursively.
