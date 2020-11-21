@@ -1,8 +1,8 @@
-import {PortablePath, npath, NativePath} from '@yarnpkg/fslib';
-import {UsageError}                      from 'clipanion';
-import micromatch                        from 'micromatch';
+import {PortablePath, npath} from '@yarnpkg/fslib';
+import {UsageError}          from 'clipanion';
+import micromatch            from 'micromatch';
 
-import {Readable, Transform}             from 'stream';
+import {Readable, Transform} from 'stream';
 
 export function escapeRegExp(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, `\\$&`);
