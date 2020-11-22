@@ -1,8 +1,9 @@
-import {miscUtils}                                                                        from '@yarnpkg/core';
 import {Filename, FakeFS, PortablePath, ZipCompression, ZipFS, NodeFS, ppath, xfs, npath} from '@yarnpkg/fslib';
 import {getLibzipPromise}                                                                 from '@yarnpkg/libzip';
 import {PassThrough, Readable}                                                            from 'stream';
 import tar                                                                                from 'tar';
+
+import * as miscUtils                                                                     from './miscUtils';
 
 interface MakeArchiveFromDirectoryOptions {
   baseFs?: FakeFS<PortablePath>,
