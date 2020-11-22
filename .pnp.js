@@ -7836,14 +7836,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]
       ]],
       ["@types/tar", [
-        ["npm:4.0.0", {
-          "packageLocation": "./.yarn/cache/@types-tar-npm-4.0.0-4b464df1a6-02d5b553c4.zip/node_modules/@types/tar/",
-          "packageDependencies": [
-            ["@types/tar", "npm:4.0.0"],
-            ["@types/node", "npm:10.12.18"]
-          ],
-          "linkType": "HARD",
-        }],
         ["npm:4.0.4", {
           "packageLocation": "./.yarn/cache/@types-tar-npm-4.0.4-378bee258e-69a55c1b7c.zip/node_modules/@types/tar/",
           "packageDependencies": [
@@ -27410,7 +27402,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["pkg-tests-specs", "workspace:packages/acceptance-tests/pkg-tests-specs"],
             ["@types/lodash", "npm:4.14.136"],
-            ["@types/tar", "npm:4.0.0"],
+            ["@types/tar", "npm:4.0.4"],
             ["@yarnpkg/cli", "virtual:e04a2594c769771b96db34e7a92a8a3af1c98ae86dce662589a5c5d5209e16875506f8cb5f4c2230a2b2ae06335b14466352c4ed470d39edf9edb6c515984525#workspace:packages/yarnpkg-cli"],
             ["@yarnpkg/core", "workspace:packages/yarnpkg-core"],
             ["@yarnpkg/fslib", "workspace:packages/yarnpkg-fslib"],
@@ -27420,7 +27412,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["lodash", "npm:4.17.15"],
             ["pkg-tests-core", "workspace:packages/acceptance-tests/pkg-tests-core"],
             ["semver", "npm:7.3.2"],
-            ["tar", "npm:4.4.13"]
+            ["tar", "npm:6.0.5"]
           ],
           "linkType": "SOFT",
         }]

@@ -4797,15 +4797,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tar@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "@types/tar@npm:4.0.0"
-  dependencies:
-    "@types/node": "*"
-  checksum: 02d5b553c42bbc399e6455b57603ea882cb6370065857503319be3c38ad806c7a14a5cf06086e2a9e6985bd43ed484ab92d9b6267a6a66a7e54b2d3634e36989
-  languageName: node
-  linkType: hard
-
 "@types/tar@npm:^4.0.4":
   version: 4.0.4
   resolution: "@types/tar@npm:4.0.4"
@@ -20864,7 +20855,7 @@ fsevents@^1.2.7:
   resolution: "pkg-tests-specs@workspace:packages/acceptance-tests/pkg-tests-specs"
   dependencies:
     "@types/lodash": ^4.14.136
-    "@types/tar": ^4.0.0
+    "@types/tar": ^4.0.4
     "@yarnpkg/cli": "workspace:^2.3.3"
     "@yarnpkg/core": "workspace:^2.3.1"
     "@yarnpkg/fslib": "workspace:^2.3.0"
@@ -20874,7 +20865,7 @@ fsevents@^1.2.7:
     lodash: ^4.17.15
     pkg-tests-core: "workspace:0.0.0"
     semver: ^7.1.2
-    tar: ^4.4.6
+    tar: ^6.0.5
   languageName: unknown
   linkType: soft
 
@@ -25615,7 +25606,7 @@ resolve@1.9.0:
   languageName: node
   linkType: hard
 
-"tar@npm:^4, tar@npm:^4.4.10, tar@npm:^4.4.12, tar@npm:^4.4.6":
+"tar@npm:^4, tar@npm:^4.4.10, tar@npm:^4.4.12":
   version: 4.4.13
   resolution: "tar@npm:4.4.13"
   dependencies:
