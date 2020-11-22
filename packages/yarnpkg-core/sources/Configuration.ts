@@ -348,12 +348,12 @@ export const coreDefinitions: {[coreSettingName: string]: SettingsDefinition} = 
         httpProxy: {
           description: `URL of the http proxy that must be used for outgoing http requests`,
           type: SettingsType.STRING,
-          default: process.env.HTTP_PROXY || process.env.http_proxy || null,
+          default: null,
         },
         httpsProxy: {
           description: `URL of the http proxy that must be used for outgoing https requests`,
           type: SettingsType.STRING,
-          default: process.env.HTTPS_PROXY || process.env.https_proxy || null,
+          default: null,
         },
       },
     },
